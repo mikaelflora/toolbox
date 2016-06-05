@@ -1,0 +1,122 @@
+#!/bin/bash
+
+
+# ----------------------------------------------------------------------------
+readonly AUTHOR="Mikael Flora"
+readonly MAINTAINER="<https://github.com/mikaelflora/toolbox/issues>"
+readonly APPLICATION=${0##*/}
+readonly VERSION="1"
+readonly DATE="2016-06-05"
+readonly LICENSE="GPLv3"
+readonly BRIEF="send SMS messages via 'smsapi.free-mobile.fr' (account required)"
+# ----------------------------------------------------------------------------
+
+
+# configuration -->
+SCF=/etc/sendsms.conf  # System Configuration File
+UCF=~/.sendsms.conf    #   User Configuration File
+
+declare -A CONFIG=(
+  [user]=""
+  [password]=""
+  [message]="Hello World"
+)
+# configuration <--
+
+
+# cli functions -->
+cli.version () {
+  echo "\
+${APPLICATION} v${VERSION} (${DATE})
+
+Licence ${LICENSE}. Written by ${AUTHOR}.
+Bug reports to ${MAINTAINER}."
+ 
+  exit 0
+}
+
+cli.usage () {
+  echo "\
+Synopsis:
+  ${BRIEF}.
+ 
+Usage:
+  ${APPLICATION} [-u user -p password | -f file] message
+  ${APPLICATION} [-h | -v]
+
+Options:
+  -f file
+    use configuration file (default: ~/.sendsms.conf)
+  -h
+    display this help and exit
+  -p password
+    use free-mobile user password (private key)
+  -u user
+    use free-mobile user id (login)
+  -v
+    display version information and exit
+
+Example:
+  ${APPLICATION} \"Hello World!\"
+
+Bugs:
+  Bug reports to ${MAINTAINER}."
+
+  exit 0
+}
+
+cli.error () {
+  [ -n "${*}" ] && echo "${*}"
+
+  echo "get more information with \`${APPLICATION} -h\`"
+
+  exit 1
+}
+# cli functions <--
+
+
+# parse cli and configuration files -->
+while getopts ":hvf:u:p:" option; do
+  case ${option} in
+    h) cli.usage ;;
+    v) cli.version ;;
+    f) [ -f ${OPTARG} ] && UCF=${OPTARG} || cli.error "-f ${OPTARG}: file doesn't exist" ;;
+    u) CONFIG[user]="${OPTARG}" ;;
+    p) CONFIG[password]="${OPTARG}" ;;
+    :) cli.error "-${OPTARG}: required an argument" ;;
+    \?) cli.error "-${OPTARG}: unknown option" ;;
+  esac
+done
+
+for file in ${SCF} ${UCF}; do
+  if [ -f ${file} ]; then
+    while read line; do
+      if [[ $line == ?*"="?* ]]; then
+        [ ${CONFIG[${line%%=*}]+a} ] && CONFIG[${line%%=*}]=${line##*=}
+      fi
+    done < <( sed -r 's/\s+//g' ${file} )
+  fi
+done
+
+( [ -z ${CONFIG[user]} ] || [ -z ${CONFIG[password]} ] ) && cli.error "One of needed credentials parameters is missed (user/password)"
+
+shift $((OPTIND-1))
+
+[ "$#" -ne "0" ] && CONFIG[message]="${*}"
+
+CONFIG[message]=$(echo "${CONFIG[message]}" | sed -f /usr/share/sendsms/urlencode.sed)
+# parse cli and configuration files <--
+
+
+# send SMS API request and handle return code -->
+rc=$(curl -s -w "%{http_code}\n" "https://smsapi.free-mobile.fr/sendmsg?user=${CONFIG[user]}&pass=${CONFIG[password]}&msg=${CONFIG[message]}")
+
+case ${rc} in
+  200) echo "${rc}: Success"; exit 0 ;;
+  400) echo "${rc}: One of needed parameters is missed or incorrect"; exit 1 ;;
+  402) echo "${rc}: Too many request sent, please wait few time"; exit 1 ;;
+  403) echo "${rc}: Access denied, check your credentials"; exit 1 ;;
+  500) echo "${rc}: SMS API got an internal error, try again later"; exit 1 ;;
+  *) echo "${rc}: Unknown error"; exit 1 ;;
+esac
+# send SMS API request and handle return code <--
