@@ -4,7 +4,7 @@
 
 Personal toolbox:  
   - **sendsms**: send SMS messages via `smsapi.free-mobile.fr` (free-mobile account required)
-  - **deploy**: deploy changes to multiple servers.
+  - **deploy**: deploy changes to multiple servers
 
 ## Installation
 
