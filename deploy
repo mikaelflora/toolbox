@@ -1,0 +1,224 @@
+#!/bin/bash
+ 
+ 
+# ----------------------------------------------------------------------------
+readonly AUTHOR="Mikael Flora"
+readonly MAINTAINER="Mikael Flora"
+readonly APPLICATION_NAME=`basename ${0}`
+readonly VERSION="0.5.1"
+readonly DATE="2016-09-26"
+readonly COPYRIGHT=""
+readonly LICENCE=""
+readonly BRIEF="Deploy changes to multiple servers"
+# ----------------------------------------------------------------------------
+ 
+ 
+version() {
+  echo "\
+${APPLICATION_NAME} v${VERSION}
+${BRIEF}.
+ 
+Copyright ${COPYRIGHT}
+Licence ${LICENCE}
+ 
+Written by ${AUTHOR}.
+Maintained by ${MAINTAINER}."
+ 
+  exit 0
+}
+ 
+ 
+usage() {
+  echo "\                                                                                                                            
+${APPLICATION_NAME} v${VERSION}                                                                                                      
+${BRIEF}.                                                                                                                            
+                                                                                                                                     
+Usage:                                                                                                                               
+  ${APPLICATION_NAME} [-u host_list] [-e host_list] [-F ssh_config_file] [-p] script                                                 
+  ${APPLICATION_NAME} [-u host_list] [-e host_list] [-F ssh_config_file] [-p] -c command                                             
+  ${APPLICATION_NAME} [-u host_list] [-e host_list] [-F ssh_config_file] [-p] [-r] source :destination                               
+  ${APPLICATION_NAME} -l [-u host_list] [-e host_list] [-F ssh_config_file]                                                          
+  ${APPLICATION_NAME} [-h | -V]                                                                                                      
+                                                                                                                                     
+Options:                                                                                                                             
+  -c command                                                                                                                         
+    execute command and exit                                                                                                         
+  -e foo[,bar[,...]]                                                                                                                 
+    exclude comma-separated host list                                                                                                
+  -F ssh_config_file                                                                                                                 
+    specifies an alternative per-user configuration file                                                                             
+  -h                                                                                                                                 
+    display this help and exit                                                                                                       
+  -l                                                                                                                                 
+    list all hosts and exit                                                                                                          
+  -p                                                                                                                                 
+    use subprocessus
+  -r source destination
+    recursive scp (remote host is prefixed by ':')
+  -u foo[,bar[,...]]
+    use comma-separated host list
+  -V
+    display version information and exit
+ 
+Bugs:
+  E-mail bug reports to ${MAINTAINER}."
+ 
+  exit 0
+}
+
+
+error_and_get_help() {
+  if [ -n "${1}" ]; then
+    echo "${1}"
+  fi
+
+  echo "get more information with \`${APPLICATION_NAME} -h\`"
+
+  exit 1
+}
+ 
+ 
+SSH_CONF_FILE=~/.ssh/config
+
+lhosts=false
+subprocessus=false
+ 
+ 
+while getopts ":hVlu:e:F:c:rp" option; do
+  case ${option} in
+    h)
+      usage
+      ;;
+    V)
+      version
+      ;;
+    l)
+      lhosts=true
+      ;;
+    u)
+      HOSTS="${OPTARG//,/ }"
+      ;;
+    e)
+      exclude_hosts="${OPTARG//,/ }"
+      ;;
+    c)
+      ssh_command="${OPTARG}"
+      ;;
+    F)
+      SSH_CONF_FILE="${OPTARG}"
+      ;;
+    r)
+      recursive="-r"
+      ;;
+    p)
+      subprocessus=true
+      ;;
+    :)
+      error_and_get_help "-${OPTARG}: required an argument"
+      ;;
+    \?)
+      error_and_get_help "-${OPTARG}: unknown option"
+      ;;
+  esac
+done
+ 
+ 
+if [ ! -f "${SSH_CONF_FILE}" ]; then
+  echo -e "no ssh config file.\nYou need \`${SSH_CONF_FILE}\`"
+  exit 1
+fi
+ 
+
+# use configuration file if no comma-separated hosts list (no option -u)
+if [ -z "${HOSTS}" ]
+then 
+  HOSTS=`grep "^Host " ${SSH_CONF_FILE} | grep -E -v "(\*|\?|\!)" | cut -c 6-` 
+fi
+
+
+# exclude specified hosts (option -e)
+if ! [ -z "${exclude_hosts}" ]
+then
+  for exclude_host in ${exclude_hosts}; do
+    HOSTS="${HOSTS//${exclude_host}/}"
+  done
+fi
+
+
+# list all hosts and exit (option -l)
+if ${lhosts}; then
+  i=0
+  for host in ${HOSTS};do
+    ((i++))
+  done
+  echo "  $i hosts available:"
+
+  for host in ${HOSTS};do
+    printf "%s\n" "${host}"
+  done | sort | column
+ 
+  exit 0
+fi
+
+
+shift $((OPTIND-1))
+
+
+declare -A pid
+
+
+# ssh: execute command
+if ! [ -z "${ssh_command}" ]; then
+# deploy command (option -c)
+  for host in ${HOSTS}; do
+    if ${subprocessus}; then
+      ssh -F ${SSH_CONF_FILE} ${host} ${ssh_command} & pid[${host}]=${!}
+    else
+      echo "${host}"
+      ssh -F ${SSH_CONF_FILE} ${host} ${ssh_command}
+    fi
+  done
+# scp
+elif [[ "$#" = 2 ]]; then
+  if [[ ":" != "${1:0:1}" ]] && ( [ -f "${1}" ] || ( ! [ -z "${recursive}" ] && ( [ -f "${1}" ] || [ -d "${1}" ] ) ) )  && [[ ":" = "${2:0:1}" ]]; then
+# scp local to remote
+    for host in ${HOSTS}; do
+      if ${subprocessus}; then
+        scp -F ${SSH_CONF_FILE} ${recursive} ${1} ${host}${2} & pid[${host}]=${!}
+      else
+      echo "${host}"
+        scp -F ${SSH_CONF_FILE} ${recursive} ${1} ${host}${2}
+      fi
+    done
+  else
+    error_and_get_help "bad scp syntax"
+  fi
+# ssh: execute script
+elif [ -z "${ssh_command}" ] && [[ "$#" = 1 ]] && [ -f "${1}" ]; then
+# deploy Bash script
+  for host in ${HOSTS}; do
+    if ${subprocessus}; then
+      ssh -F ${SSH_CONF_FILE} ${host} '/bin/bash -s' < ${1} & pid[${host}]=${!}
+    else
+      echo "${host}"
+      ssh -F ${SSH_CONF_FILE} ${host} '/bin/bash -s' < ${1}
+    fi
+  done
+else
+  error_and_get_help "bad syntax"
+fi
+
+
+# error report
+if ${subprocessus}; then
+  for host in ${HOSTS}; do
+    wait ${pid[${host}]}
+    return_code=${?}
+    if [[ ${return_code} -ne 0 ]]; then
+      echo "${host};${pid[${host}]};${return_code}"
+    fi
+  done
+fi
+
+ 
+exit 0
