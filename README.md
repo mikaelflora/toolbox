@@ -5,6 +5,7 @@
 Personal toolbox:  
   - **sendsms**: send SMS messages via `smsapi.free-mobile.fr` (free-mobile account required)
   - **deploy**: deploy changes to multiple servers
+  - **genpasswd**: generate random password
 
 ## Installation
 
@@ -15,6 +16,9 @@ git clone https://github.com/mikaelflora/toolbox.git
 ./toolbox/install.bash
 # deploy
 cp toolbox/deploy /usr/bin/
+chmod 755 /usr/bin/deploy
+# genpasswd
+cp toolbox/genpasswd/genpasswd /usr/bin/
 chmod 755 /usr/bin/deploy
 ```
 
@@ -39,6 +43,7 @@ password=PrivateKey
 ### deploy
 
 SSH configuration file is required to work. Here is an example `~/.ssh/config`:  
+
 ```file
 Host foo
     HostName foo.tld
@@ -65,6 +70,15 @@ deploy -c 'echo "Hello World" >> /tmp/hw.txt'
 deploy -u foo,bar script.bash
 # deploy all hosts, excepting foo and bar
 deploy -e foo,bar script.bash
+```
+
+### genpasswd
+
+Generate random password.  
+
+```bash
+genpasswd
+genpasswd -l14 -s94
 ```
 
 ## License
