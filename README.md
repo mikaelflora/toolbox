@@ -13,9 +13,9 @@ Get source code and insall:
 ```bash
 git clone https://github.com/mikaelflora/toolbox.git
 # sendsms
-./toolbox/install.bash
+./toolbox/sendsms/install.bash
 # deploy
-cp toolbox/deploy /usr/bin/
+cp toolbox/deploy/deploy /usr/bin/
 chmod 755 /usr/bin/deploy
 # genpasswd
 cp toolbox/genpasswd/genpasswd /usr/bin/

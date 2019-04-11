@@ -37,7 +37,7 @@ Options:
   -l length
     password length [4-99] (default: 12)
   -s number
-    number of possible symbols [2,10,16,52,62,72,82,94] (default: 72)
+    symbols possibilities number [2,10,16,52,62,72,82,94] (default: 72)
   -v
     display version information and exit
 
@@ -47,6 +47,7 @@ Examples:
 
 Bugs:
   Bug reports to ${MAINTAINER}."
+
   exit 0
 }
 
@@ -99,5 +100,6 @@ done
 LC_ALL=C < /dev/urandom tr -dc ${symbols} | head -c${length}
 echo ''
 # main <--
+
 
 exit 0

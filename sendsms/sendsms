@@ -5,14 +5,14 @@
 readonly AUTHOR="Mikael Flora"
 readonly MAINTAINER="<https://github.com/mikaelflora/toolbox/issues>"
 readonly APPLICATION=${0##*/}
-readonly VERSION="1"
-readonly DATE="2016-06-05"
+readonly VERSION="1.1"
+readonly DATE="2019-04-11"
 readonly LICENSE="GPLv3"
 readonly BRIEF="send SMS messages via 'smsapi.free-mobile.fr' (account required)"
 # ----------------------------------------------------------------------------
 
 
-# configuration -->
+# CONFIGURATION -->
 SCF=/etc/sendsms.conf  # System Configuration File
 UCF=~/.sendsms.conf    #   User Configuration File
 
@@ -21,10 +21,10 @@ declare -A CONFIG=(
   [password]=""
   [message]="Hello World"
 )
-# configuration <--
+# CONFIGURATION <--
 
 
-# cli functions -->
+# CLI FUNCTIONS -->
 cli.version () {
   echo "\
 ${APPLICATION} v${VERSION} (${DATE})
@@ -72,10 +72,10 @@ cli.error () {
 
   exit 1
 }
-# cli functions <--
+# CLI FUNCTIONS <--
 
 
-# parse cli and configuration files -->
+# PARSE CLI AND CONFIGURATION -->
 while getopts ":hvf:u:p:" option; do
   case ${option} in
     h) cli.usage ;;
@@ -105,18 +105,22 @@ shift $((OPTIND-1))
 [ "$#" -ne "0" ] && CONFIG[message]="${*}"
 
 CONFIG[message]=$(echo "${CONFIG[message]}" | sed -f /usr/share/sendsms/urlencode.sed)
-# parse cli and configuration files <--
+# PARSE CLI AND CONFIGURATION <--
 
 
-# send SMS API request and handle return code -->
+# MAIN -->
+# send SMS API request and handle return code
 rc=$(curl -s -w "%{http_code}\n" "https://smsapi.free-mobile.fr/sendmsg?user=${CONFIG[user]}&pass=${CONFIG[password]}&msg=${CONFIG[message]}")
 
 case ${rc} in
-  200) echo "${rc}: Success"; exit 0 ;;
+  200) echo "${rc}: Success" ;;
   400) echo "${rc}: One of needed parameters is missed or incorrect"; exit 1 ;;
   402) echo "${rc}: Too many request sent, please wait few time"; exit 1 ;;
   403) echo "${rc}: Access denied, check your credentials"; exit 1 ;;
   500) echo "${rc}: SMS API got an internal error, try again later"; exit 1 ;;
   *) echo "${rc}: Unknown error"; exit 1 ;;
 esac
-# send SMS API request and handle return code <--
+# MAIN <--
+
+
+exit 0
