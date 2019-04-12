@@ -5,16 +5,17 @@
 readonly AUTHOR="Mikael Flora"
 readonly MAINTAINER="<https://github.com/mikaelflora/toolbox/issues>"
 readonly APPLICATION=${0##*/}
-readonly VERSION="1.1"
-readonly DATE="2019-04-11"
+readonly VERSION="1.2"
+readonly DATE="2019-04-13"
 readonly LICENSE="GPLv3"
 readonly BRIEF="send SMS messages via 'smsapi.free-mobile.fr' (account required)"
 # ----------------------------------------------------------------------------
 
 
 # CONFIGURATION -->
-SCF=/etc/sendsms.conf  # System Configuration File
-UCF=~/.sendsms.conf    #   User Configuration File
+SCF=/usr/local/etc/sendsms.conf  # System Configuration File
+UCF=~/.sendsms.conf              # User Configuration File
+SED=/usr/local/share/sendsms/urlencode.sed
 
 declare -A CONFIG=(
   [user]=""
@@ -104,7 +105,7 @@ shift $((OPTIND-1))
 
 [ "$#" -ne "0" ] && CONFIG[message]="${*}"
 
-CONFIG[message]=$(echo "${CONFIG[message]}" | sed -f /usr/share/sendsms/urlencode.sed)
+CONFIG[message]=$(echo "${CONFIG[message]}" | sed -f "${SED}")
 # PARSE CLI AND CONFIGURATION <--
 
 

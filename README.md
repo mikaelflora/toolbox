@@ -3,23 +3,17 @@
 ## Synopsis
 
 Personal toolbox:  
-  - **sendsms**: send SMS messages via `smsapi.free-mobile.fr` (free-mobile account required)
-  - **deploy**: deploy changes to multiple servers
-  - **genpasswd**: generate random password
+
+  - **sendsms:** send SMS messages via `smsapi.free-mobile.fr` (free-mobile account required)
+  - **deploy:** deploy changes to multiple servers
+  - **genpasswd:** generate random password
 
 ## Installation
 
-Get source code and insall:  
 ```bash
-git clone https://github.com/mikaelflora/toolbox.git
-# sendsms
-./toolbox/sendsms/install.bash
-# deploy
-cp toolbox/deploy/deploy /usr/bin/
-chmod 755 /usr/bin/deploy
-# genpasswd
-cp toolbox/genpasswd/genpasswd /usr/bin/
-chmod 755 /usr/bin/deploy
+# run the setup script, for instance 'sendsms':
+cd ./toolbox/sendsms
+./setup install
 ```
 
 ## Getting started
@@ -29,12 +23,14 @@ chmod 755 /usr/bin/deploy
 Send SMS messages via `smsapi.free-mobile.fr` (free-mobile account required).
 
 ```bash
-# send message:
+# send message
 sendsms -u user -p password "your message"
-sendsms "Hello World"  # <-- configuration file required
+# send message (configuration file required)
+sendsms "Hello World"
 ```
 
 Configuration file example `~/.sendsms.conf`:  
+
 ```file
 user=Login
 password=PrivateKey
@@ -58,7 +54,8 @@ Host baz
     User baz
 ```
 
-Usage :  
+Usage:  
+
 ```bash
 # get help
 deploy -h
@@ -77,7 +74,9 @@ deploy -e foo,bar script.bash
 Generate random password.  
 
 ```bash
+# a length of 12 characters included in '[:alnum:]?!()[]%$*#'
 genpasswd
+# a length of 14 characters included in '[:alnum:][:punct:]'
 genpasswd -l14 -s94
 ```
 

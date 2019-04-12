@@ -1,0 +1,60 @@
+#!/bin/sh
+
+
+# ----------------------------------------------------------------------------
+readonly SETUP=${0##*/}
+readonly APPLICATION='deploy'
+readonly PREREQUISITES='bash sed grep ssh scp'
+# ----------------------------------------------------------------------------
+
+
+# run as root -->
+if [ "$USER" != 'root' ]; then
+  [ "$LOGNAME" != 'root' ] && echo "Please run as root" && exit 1
+fi
+# run as root <--
+
+
+# setup functions -->
+setup_usage () {
+  rc=0
+  [ -n "${*}" ] && echo "${*}" && rc=1
+  echo "\
+Usage:
+  $SETUP [install | uninstall]"
+
+  exit $rc
+}
+
+setup_check_prerequisites () {
+  for cmd in $PREREQUISITES; do
+    command -v $cmd >/dev/null
+    [ $? -ne 0 ] && echo "you need the '$cmd' command" && exit 1
+  done
+}
+
+setup_install () {
+  cp deploy /usr/local/bin/deploy
+  chown root:root /usr/local/bin/deploy
+  chmod 0755 /usr/local/bin/deploy
+}
+
+setup_uninstall () {
+  rm -f /usr/local/bin/deploy
+}
+# setup functions <--
+
+
+# parse cli -->
+case $1 in
+  help) setup_usage ;;
+  install)
+    setup_check_prerequisites
+    setup_install ;;
+  uninstall) setup_uninstall ;;
+  *) setup_usage 'invalid or missing argument' ;;
+esac
+# parse cli <--
+
+
+exit 0
