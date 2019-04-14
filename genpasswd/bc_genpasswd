@@ -1,0 +1,28 @@
+#
+# completion for genpasswd:
+#   genpasswd [-l lenght] [-s number]
+#   name [-h | v]
+#
+
+_genpasswd ()
+{
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  opts="-h -v -l -s"
+
+  case "${prev}" in
+    -h|-v) return 0 ;;
+    -s)
+      local p_params="2 10 16 52 62 72 82 94"
+      COMPREPLY=( $(compgen -W "${p_params}" -- ${cur}) )
+      return 0;;
+    *) ;;
+  esac
+
+  COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+  return 0
+}
+
+complete -F _genpasswd genpasswd

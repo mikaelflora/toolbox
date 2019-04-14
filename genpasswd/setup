@@ -37,10 +37,19 @@ setup_install () {
   cp genpasswd /usr/local/bin/genpasswd
   chown root:root /usr/local/bin/genpasswd
   chmod 0755 /usr/local/bin/genpasswd
+  # bash completion
+  if [ -d /usr/share/bash-completion/completions ]; then
+    cp bc_genpasswd /usr/share/bash-completion/completions/genpasswd
+    chown root:root /usr/share/bash-completion/completions/genpasswd
+    chmod 0644 /usr/share/bash-completion/completions/genpasswd
+  fi
 }
 
 setup_uninstall () {
   rm -f /usr/local/bin/genpasswd
+  if [ -d /usr/share/bash-completion/completions ]; then
+    rm -f /usr/share/bash-completion/completions/genpasswd
+  fi
 }
 # setup functions <--
 
